@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Java,Spring,Mybatis,面试,分布式,多线程,数据库,优化,并发,React,Flutter">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="对于多线程的理解不是非常深刻，工作中用到多线程代码的机会也不多，前不久遇到了一个使用场景，通过编码实现后对于多线程的理解和应用有了更加深刻的理解。场景如下：现有给用户发送产品调研的需求，运营的同事拿来了一个Excel文件，要求给Excel里面大约六万个手机号发送调研短信。 最简单的方法就是一个循环然后单线程顺序发送，但是核心问题在于，给短信运营商发短信的接口响应时间较长，假设平均100ms的响应时">
+<meta name="keywords" content="网络资源搬运工 Java Spring 面试 数据库 算法 zk dubbo 分布式 redis React Flutter anything">
+<meta property="og:type" content="article">
+<meta property="og:title" content="批量任务体现多线程的威力！ - 掘金">
+<meta property="og:url" content="http://yoursite.com/2019/02/05/yuque/批量任务体现多线程的威力！ - 掘金/index.html">
+<meta property="og:site_name" content="My Blogs">
+<meta property="og:description" content="对于多线程的理解不是非常深刻，工作中用到多线程代码的机会也不多，前不久遇到了一个使用场景，通过编码实现后对于多线程的理解和应用有了更加深刻的理解。场景如下：现有给用户发送产品调研的需求，运营的同事拿来了一个Excel文件，要求给Excel里面大约六万个手机号发送调研短信。 最简单的方法就是一个循环然后单线程顺序发送，但是核心问题在于，给短信运营商发短信的接口响应时间较长，假设平均100ms的响应时">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2019-06-26T11:34:40.482Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="批量任务体现多线程的威力！ - 掘金">
+<meta name="twitter:description" content="对于多线程的理解不是非常深刻，工作中用到多线程代码的机会也不多，前不久遇到了一个使用场景，通过编码实现后对于多线程的理解和应用有了更加深刻的理解。场景如下：现有给用户发送产品调研的需求，运营的同事拿来了一个Excel文件，要求给Excel里面大约六万个手机号发送调研短信。 最简单的方法就是一个循环然后单线程顺序发送，但是核心问题在于，给短信运营商发短信的接口响应时间较长，假设平均100ms的响应时">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"always","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/02/05/yuque/批量任务体现多线程的威力！ - 掘金/">
+
+
+
+
+
+  <title>批量任务体现多线程的威力！ - 掘金 | My Blogs</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">My Blogs</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">求知若渴 虚心若愚</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-主页"></i> <br>
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-归档"></i> <br>
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            Search
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/05/yuque/批量任务体现多线程的威力！ - 掘金/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="临安的风">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="My Blogs">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">批量任务体现多线程的威力！ - 掘金</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-05T21:36:12+08:00">
+                2019-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>对于多线程的理解不是非常深刻，工作中用到多线程代码的机会也不多，前不久遇到了一个使用场景，通过编码实现后对于多线程的理解和应用有了更加深刻的理解。场景如下：现有给用户发送产品调研的需求，运营的同事拿来了一个Excel文件，要求给Excel里面大约六万个手机号发送调研短信。</p>
+<p>最简单的方法就是一个循环然后单线程顺序发送，但是核心问题在于，给短信运营商发短信的接口响应时间较长，假设平均100ms的响应时间，那么单线程发送的话需要6万*0.1秒=6000秒。显然这个时间是不能接受的，运营商系统的发送接口我们是不能优化的，只得增强自己的发送和处理能力才能尽快的完成任务。</p>
+<p><a href></a><br><a name="8ea4e261"></a></p>
+<h2 id="读取Excel中的信息"><a href="#读取Excel中的信息" class="headerlink" title="读取Excel中的信息"></a>读取Excel中的信息</h2><p><a href></a><br><a name="dd24a2fa"></a></p>
+<h3 id="包依赖"><a href="#包依赖" class="headerlink" title="包依赖"></a>包依赖</h3><p>工具类代码，Maven中引入如下两个包</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;org.apache.poi&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;poi-ooxml&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;3.17&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;org.apache.xmlbeans&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;xmlbeans&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;2.6.0&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<p><a href></a><br><a name="306b8a15"></a></p>
+<h3 id="读取Excel的工具类代码"><a href="#读取Excel的工具类代码" class="headerlink" title="读取Excel的工具类代码"></a>读取Excel的工具类代码</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 读取Excel的文件信息</span><br><span class="line"> *</span><br><span class="line"> * @param fileName</span><br><span class="line"> */</span><br><span class="line">public static void readFromExcel(String fileName) &#123;</span><br><span class="line">    InputStream is = null;</span><br><span class="line">    try &#123;</span><br><span class="line">        is = new FileInputStream(fileName);</span><br><span class="line">        XSSFWorkbook workbook = new XSSFWorkbook(is);</span><br><span class="line">        XSSFSheet sheet = workbook.getSheetAt(0);</span><br><span class="line">        int num = 0;</span><br><span class="line">        // 循环行Row</span><br><span class="line">        for (int rowNum = 0, lastNum = sheet.getLastRowNum(); rowNum &lt;= lastNum; rowNum++) &#123;</span><br><span class="line">            XSSFRow row = sheet.getRow(rowNum);</span><br><span class="line">            String phoneNumber = getStringValueFromCell(row.getCell(0)).trim();</span><br><span class="line">            phoneList.add(phoneNumber);</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(num);</span><br><span class="line">    &#125; catch (FileNotFoundException e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125; catch (IOException e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line">/**</span><br><span class="line"> * 读取Excel里面Cell内容</span><br><span class="line"> *</span><br><span class="line"> * @param cell</span><br><span class="line"> * @return</span><br><span class="line"> */</span><br><span class="line">private static String getStringValueFromCell(XSSFCell cell) &#123;</span><br><span class="line"> </span><br><span class="line">    // 单元格内的时间格式</span><br><span class="line">    SimpleDateFormat dateFormat = new SimpleDateFormat(&quot;yyyy-MM-dd&quot;);</span><br><span class="line">    // 单元格内的数字类型</span><br><span class="line">    DecimalFormat decimalFormat = new DecimalFormat(&quot;#.#####&quot;);</span><br><span class="line">    // 单元格默认为空</span><br><span class="line">    String cellValue = &quot;&quot;;</span><br><span class="line"> </span><br><span class="line">    if (cell == null) &#123;</span><br><span class="line">        return cellValue;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    // 按类型读取</span><br><span class="line">    if (cell.getCellType() == XSSFCell.CELL_TYPE_STRING) &#123;</span><br><span class="line">        cellValue = cell.getStringCellValue();</span><br><span class="line">    &#125; else if (cell.getCellType() == XSSFCell.CELL_TYPE_NUMERIC) &#123;</span><br><span class="line">        // 日期转为时间形式</span><br><span class="line">        if (DateUtil.isCellDateFormatted(cell)) &#123;</span><br><span class="line">            double d = cell.getNumericCellValue();</span><br><span class="line">            Date date = DateUtil.getJavaDate(d);</span><br><span class="line">            cellValue = dateFormat.format(date);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            // 其他转为数字</span><br><span class="line">            cellValue = decimalFormat.format((cell.getNumericCellValue()));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; else if (cell.getCellType() == XSSFCell.CELL_TYPE_BLANK) &#123;</span><br><span class="line">        cellValue = &quot;&quot;;</span><br><span class="line">    &#125; else if (cell.getCellType() == XSSFCell.CELL_TYPE_BOOLEAN) &#123;</span><br><span class="line">        cellValue = String.valueOf(cell.getBooleanCellValue());</span><br><span class="line">    &#125; else if (cell.getCellType() == XSSFCell.CELL_TYPE_ERROR) &#123;</span><br><span class="line">        cellValue = &quot;&quot;;</span><br><span class="line">    &#125; else if (cell.getCellType() == XSSFCell.CELL_TYPE_FORMULA) &#123;</span><br><span class="line">        cellValue = cell.getCellFormula().toString();</span><br><span class="line">    &#125;</span><br><span class="line">    return cellValue;</span><br><span class="line">&#125;  </span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<p><a href></a><br><a name="43194329"></a></p>
+<h2 id="模拟运营商发送短信的方法"><a href="#模拟运营商发送短信的方法" class="headerlink" title="模拟运营商发送短信的方法"></a>模拟运营商发送短信的方法</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 外部接口耗时长，通过多线程增强</span><br><span class="line"> *</span><br><span class="line"> * @param userPhone</span><br><span class="line"> */</span><br><span class="line">public void sendMsgToPhone(String userPhone) &#123;</span><br><span class="line">    try &#123;</span><br><span class="line">        Thread.sleep(SEND_COST_TIME);</span><br><span class="line">    &#125; catch (InterruptedException e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">    System.out.println(&quot;send message to : &quot; + userPhone);</span><br><span class="line">&#125;</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<p><a href></a><br><a name="0d8e4eaa"></a></p>
+<h2 id="多线程发短信"><a href="#多线程发短信" class="headerlink" title="多线程发短信"></a>多线程发短信</h2><p><a href></a><br><a name="7d335007"></a></p>
+<h3 id="简单的单线程发送"><a href="#简单的单线程发送" class="headerlink" title="简单的单线程发送"></a>简单的单线程发送</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line">     * 单线程发送</span><br><span class="line">     *</span><br><span class="line">     * @param phoneList</span><br><span class="line">     * @return</span><br><span class="line">     */</span><br><span class="line">    private long singleThread(List&lt;String&gt; phoneList) &#123;</span><br><span class="line">        long start = System.currentTimeMillis();</span><br><span class="line">        /*// 直接主线程执行</span><br><span class="line">        for (String phoneNumber : phoneList) &#123;</span><br><span class="line">            threadOperation.sendMsgToPhone(phoneNumber);</span><br><span class="line">        &#125;*/</span><br><span class="line">        SendMsgExtendThread smet = threadOperation.new SendMsgExtendThread(phoneList);</span><br><span class="line">        smet.start();</span><br><span class="line">        long totalTime = System.currentTimeMillis() - start;</span><br><span class="line">        System.out.println(&quot;单线程发送总时间：&quot; + totalTime);</span><br><span class="line">        return totalTime;</span><br><span class="line">    &#125;</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<p>对于大批量发短信的场景，如果使用单线程将全部一千个号码发送完毕的话，大约需要103132ms，可见效率低下，耗费时间较长。</p>
+<p>多线程发送短信中的一个核心要点是，将全部手机号码拆分成多个组后，分配给每个线程进行执行。</p>
+<p><a href></a><br><a name="37cc9449"></a></p>
+<h3 id="两个线程的示例"><a href="#两个线程的示例" class="headerlink" title="两个线程的示例"></a>两个线程的示例</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 两个线程发送</span><br><span class="line"> *</span><br><span class="line"> * @param phoneList</span><br><span class="line"> * @return</span><br><span class="line"> */</span><br><span class="line">private long twoThreads(List&lt;String&gt; phoneList) &#123;</span><br><span class="line">    long start = System.currentTimeMillis();</span><br><span class="line">    List&lt;String&gt; list1 = phoneList.subList(0, phoneList.size() / 2);</span><br><span class="line">    List&lt;String&gt; list2 = phoneList.subList(phoneList.size() / 2, phoneList.size());</span><br><span class="line">    SendMsgExtendThread smet = threadOperation.new SendMsgExtendThread(list1);</span><br><span class="line">    smet.start();</span><br><span class="line">    SendMsgExtendThread smet1 = threadOperation.new SendMsgExtendThread(list2);</span><br><span class="line">    smet1.start();</span><br><span class="line">    return 0;</span><br><span class="line">&#125;</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<p><a href></a><br><a name="844e5e8c"></a></p>
+<h3 id="另一种数据分组方式"><a href="#另一种数据分组方式" class="headerlink" title="另一种数据分组方式"></a>另一种数据分组方式</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 另外一种分配方式</span><br><span class="line"> *</span><br><span class="line"> * @param phoneList</span><br><span class="line"> */</span><br><span class="line">private void otherThread(List&lt;String&gt; phoneList) &#123;</span><br><span class="line">    for (int threadNo = 0; threadNo &lt; 10; threadNo++) &#123;</span><br><span class="line">        int numbersPerThread = 10;</span><br><span class="line">        List&lt;String&gt; list = phoneList.subList(threadNo * numbersPerThread, (threadNo * numbersPerThread) + 10);</span><br><span class="line">        SendMsgExtendThread smet = threadOperation.new SendMsgExtendThread(list);</span><br><span class="line">        smet.start();</span><br><span class="line">        if (list.size() &lt; numbersPerThread) &#123;</span><br><span class="line">            break;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<p><a href></a><br><a name="a476680c"></a></p>
+<h3 id="线程池发送"><a href="#线程池发送" class="headerlink" title="线程池发送"></a>线程池发送</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 线程池发送</span><br><span class="line"> *</span><br><span class="line"> * @param phoneList</span><br><span class="line"> * @return</span><br><span class="line"> */</span><br><span class="line">private void threadPool(List&lt;String&gt; phoneList) &#123;</span><br><span class="line">    for (int threadNo = 0; threadNo &lt; THREAD_POOL_SIZE; threadNo++) &#123;</span><br><span class="line">        int numbersPerThread = 10;</span><br><span class="line">        List&lt;String&gt; list = phoneList.subList(threadNo * numbersPerThread, (threadNo * numbersPerThread) + 10);</span><br><span class="line">        threadOperation.executorService.execute(threadOperation.new SendMsgExtendThread(list));</span><br><span class="line">    &#125;</span><br><span class="line">    threadOperation.executorService.shutdown();</span><br><span class="line">&#125;</span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<p><a href></a><br><a name="2c21416f"></a></p>
+<h3 id="使用Callable发送"><a href="#使用Callable发送" class="headerlink" title="使用Callable发送"></a>使用Callable发送</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 多线程发送</span><br><span class="line"> *</span><br><span class="line"> * @param phoneList</span><br><span class="line"> * @return</span><br><span class="line"> */</span><br><span class="line">private void multiThreadSend(List&lt;String&gt; phoneList) &#123;</span><br><span class="line">    List&lt;Future&lt;Long&gt;&gt; futures = new ArrayList&lt;&gt;();</span><br><span class="line">    for (int threadNo = 0; threadNo &lt; THREAD_POOL_SIZE; threadNo++) &#123;</span><br><span class="line">        int numbersPerThread = 100;</span><br><span class="line">        List&lt;String&gt; list = phoneList.subList(threadNo * numbersPerThread, (threadNo * numbersPerThread) + 100);</span><br><span class="line">        Future&lt;Long&gt; future = threadOperation.executorService.submit(threadOperation.new SendMsgImplCallable(list, String.valueOf(threadNo)));</span><br><span class="line">        futures.add(future);</span><br><span class="line">    &#125;</span><br><span class="line">    for (Future&lt;Long&gt; future : futures) &#123;</span><br><span class="line">        try &#123;</span><br><span class="line">            System.out.println(future.get());</span><br><span class="line">        &#125; catch (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125; catch (ExecutionException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    threadOperation.executorService.shutdown();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">复制代码</span><br></pre></td></tr></table></figure>
+
+<p>使用多线程发送，将发送任务进行分割然后分配给每个线程执行，执行完毕需要10266ms，可见执行效率明显提升，消耗时间明显缩短。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br><span class="line">269</span><br><span class="line">270</span><br><span class="line">271</span><br><span class="line">272</span><br><span class="line">273</span><br><span class="line">274</span><br><span class="line">275</span><br><span class="line">276</span><br><span class="line">277</span><br><span class="line">278</span><br><span class="line">279</span><br><span class="line">280</span><br><span class="line">281</span><br><span class="line">282</span><br><span class="line">283</span><br><span class="line">284</span><br><span class="line">285</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lingyejun.tick.authenticator;</span><br><span class="line"> </span><br><span class="line"><span class="keyword">import</span> org.apache.poi.ss.usermodel.DateUtil;</span><br><span class="line"><span class="keyword">import</span> org.apache.poi.xssf.usermodel.XSSFCell;</span><br><span class="line"><span class="keyword">import</span> org.apache.poi.xssf.usermodel.XSSFRow;</span><br><span class="line"><span class="keyword">import</span> org.apache.poi.xssf.usermodel.XSSFSheet;</span><br><span class="line"><span class="keyword">import</span> org.apache.poi.xssf.usermodel.XSSFWorkbook;</span><br><span class="line"> </span><br><span class="line"><span class="keyword">import</span> java.io.FileInputStream;</span><br><span class="line"><span class="keyword">import</span> java.io.FileNotFoundException;</span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"><span class="keyword">import</span> java.io.InputStream;</span><br><span class="line"><span class="keyword">import</span> java.text.DecimalFormat;</span><br><span class="line"><span class="keyword">import</span> java.text.SimpleDateFormat;</span><br><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"><span class="keyword">import</span> java.util.concurrent.*;</span><br><span class="line"> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadOperation</span> </span>&#123;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 发短信的同步等待时间</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> SEND_COST_TIME = <span class="number">100L</span>;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 手机号文件</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String FILE_NAME = <span class="string">"/Users/lingye/Downloads/phone_number.xlsx"</span>;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 手机号列表</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> List&lt;String&gt; phoneList = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 单例对象</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">volatile</span> ThreadOperation threadOperation;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 线程个数</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> THREAD_POOL_SIZE = <span class="number">10</span>;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// 初始化线程池</span></span><br><span class="line">    <span class="keyword">private</span> ExecutorService executorService = <span class="keyword">new</span> ThreadPoolExecutor(THREAD_POOL_SIZE, THREAD_POOL_SIZE,</span><br><span class="line">            <span class="number">0L</span>, TimeUnit.MILLISECONDS,</span><br><span class="line">            <span class="keyword">new</span> LinkedBlockingQueue&lt;Runnable&gt;());</span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ThreadOperation</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 从本地文件中读取手机号码</span></span><br><span class="line">        readFromExcel(FILE_NAME);</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        ThreadOperation threadOperation = getInstance();</span><br><span class="line">        <span class="comment">//threadOperation.singleThread(phoneList);</span></span><br><span class="line">        threadOperation.multiThreadSend(phoneList);</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 单例获取对象</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ThreadOperation <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (threadOperation == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (ThreadOperation.class) &#123;</span><br><span class="line">                <span class="keyword">if</span> (threadOperation == <span class="keyword">null</span>) &#123;</span><br><span class="line">                    threadOperation = <span class="keyword">new</span> ThreadOperation();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> threadOperation;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 读取Excel的文件信息</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> fileName</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">readFromExcel</span><span class="params">(String fileName)</span> </span>&#123;</span><br><span class="line">        InputStream is = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            is = <span class="keyword">new</span> FileInputStream(fileName);</span><br><span class="line">            XSSFWorkbook workbook = <span class="keyword">new</span> XSSFWorkbook(is);</span><br><span class="line">            XSSFSheet sheet = workbook.getSheetAt(<span class="number">0</span>);</span><br><span class="line">            <span class="keyword">int</span> num = <span class="number">0</span>;</span><br><span class="line">            <span class="comment">// 循环行Row</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> rowNum = <span class="number">0</span>, lastNum = sheet.getLastRowNum(); rowNum &lt;= lastNum; rowNum++) &#123;</span><br><span class="line">                XSSFRow row = sheet.getRow(rowNum);</span><br><span class="line">                String phoneNumber = getStringValueFromCell(row.getCell(<span class="number">0</span>)).trim();</span><br><span class="line">                phoneList.add(phoneNumber);</span><br><span class="line">            &#125;</span><br><span class="line">            System.out.println(num);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (FileNotFoundException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 读取Excel里面Cell内容</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> cell</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> String <span class="title">getStringValueFromCell</span><span class="params">(XSSFCell cell)</span> </span>&#123;</span><br><span class="line"> </span><br><span class="line">        <span class="comment">// 单元格内的时间格式</span></span><br><span class="line">        SimpleDateFormat dateFormat = <span class="keyword">new</span> SimpleDateFormat(<span class="string">"yyyy-MM-dd"</span>);</span><br><span class="line">        <span class="comment">// 单元格内的数字类型</span></span><br><span class="line">        DecimalFormat decimalFormat = <span class="keyword">new</span> DecimalFormat(<span class="string">"#.#####"</span>);</span><br><span class="line">        <span class="comment">// 单元格默认为空</span></span><br><span class="line">        String cellValue = <span class="string">""</span>;</span><br><span class="line"> </span><br><span class="line">        <span class="keyword">if</span> (cell == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> cellValue;</span><br><span class="line">        &#125;</span><br><span class="line"> </span><br><span class="line">        <span class="comment">// 按类型读取</span></span><br><span class="line">        <span class="keyword">if</span> (cell.getCellType() == XSSFCell.CELL_TYPE_STRING) &#123;</span><br><span class="line">            cellValue = cell.getStringCellValue();</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (cell.getCellType() == XSSFCell.CELL_TYPE_NUMERIC) &#123;</span><br><span class="line">            <span class="comment">// 日期转为时间形式</span></span><br><span class="line">            <span class="keyword">if</span> (DateUtil.isCellDateFormatted(cell)) &#123;</span><br><span class="line">                <span class="keyword">double</span> d = cell.getNumericCellValue();</span><br><span class="line">                Date date = DateUtil.getJavaDate(d);</span><br><span class="line">                cellValue = dateFormat.format(date);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">// 其他转为数字</span></span><br><span class="line">                cellValue = decimalFormat.format((cell.getNumericCellValue()));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (cell.getCellType() == XSSFCell.CELL_TYPE_BLANK) &#123;</span><br><span class="line">            cellValue = <span class="string">""</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (cell.getCellType() == XSSFCell.CELL_TYPE_BOOLEAN) &#123;</span><br><span class="line">            cellValue = String.valueOf(cell.getBooleanCellValue());</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (cell.getCellType() == XSSFCell.CELL_TYPE_ERROR) &#123;</span><br><span class="line">            cellValue = <span class="string">""</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (cell.getCellType() == XSSFCell.CELL_TYPE_FORMULA) &#123;</span><br><span class="line">            cellValue = cell.getCellFormula().toString();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> cellValue;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 外部接口耗时长，通过多线程增强</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> userPhone</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">sendMsgToPhone</span><span class="params">(String userPhone)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Thread.sleep(SEND_COST_TIME);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(<span class="string">"send message to : "</span> + userPhone);</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 单线程发送</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> phoneList</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">long</span> <span class="title">singleThread</span><span class="params">(List&lt;String&gt; phoneList)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> start = System.currentTimeMillis();</span><br><span class="line">        <span class="comment">/*// 直接主线程执行</span></span><br><span class="line"><span class="comment">        for (String phoneNumber : phoneList) &#123;</span></span><br><span class="line"><span class="comment">            threadOperation.sendMsgToPhone(phoneNumber);</span></span><br><span class="line"><span class="comment">        &#125;*/</span></span><br><span class="line">        SendMsgExtendThread smet = threadOperation.new SendMsgExtendThread(phoneList);</span><br><span class="line">        smet.start();</span><br><span class="line">        <span class="keyword">long</span> totalTime = System.currentTimeMillis() - start;</span><br><span class="line">        System.out.println(<span class="string">"单线程发送总时间："</span> + totalTime);</span><br><span class="line">        <span class="keyword">return</span> totalTime;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 另外一种分配方式</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> phoneList</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">otherThread</span><span class="params">(List&lt;String&gt; phoneList)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> threadNo = <span class="number">0</span>; threadNo &lt; <span class="number">10</span>; threadNo++) &#123;</span><br><span class="line">            <span class="keyword">int</span> numbersPerThread = <span class="number">10</span>;</span><br><span class="line">            List&lt;String&gt; list = phoneList.subList(threadNo * numbersPerThread, (threadNo * numbersPerThread) + <span class="number">10</span>);</span><br><span class="line">            SendMsgExtendThread smet = threadOperation.new SendMsgExtendThread(list);</span><br><span class="line">            smet.start();</span><br><span class="line">            <span class="keyword">if</span> (list.size() &lt; numbersPerThread) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 两个线程发送</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> phoneList</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">long</span> <span class="title">twoThreads</span><span class="params">(List&lt;String&gt; phoneList)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> start = System.currentTimeMillis();</span><br><span class="line">        List&lt;String&gt; list1 = phoneList.subList(<span class="number">0</span>, phoneList.size() / <span class="number">2</span>);</span><br><span class="line">        List&lt;String&gt; list2 = phoneList.subList(phoneList.size() / <span class="number">2</span>, phoneList.size());</span><br><span class="line">        SendMsgExtendThread smet = threadOperation.new SendMsgExtendThread(list1);</span><br><span class="line">        smet.start();</span><br><span class="line">        SendMsgExtendThread smet1 = threadOperation.new SendMsgExtendThread(list2);</span><br><span class="line">        smet1.start();</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 线程池发送</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> phoneList</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">threadPool</span><span class="params">(List&lt;String&gt; phoneList)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> threadNo = <span class="number">0</span>; threadNo &lt; THREAD_POOL_SIZE; threadNo++) &#123;</span><br><span class="line">            <span class="keyword">int</span> numbersPerThread = <span class="number">10</span>;</span><br><span class="line">            List&lt;String&gt; list = phoneList.subList(threadNo * numbersPerThread, (threadNo * numbersPerThread) + <span class="number">10</span>);</span><br><span class="line">            threadOperation.executorService.execute(threadOperation.new SendMsgExtendThread(list));</span><br><span class="line">        &#125;</span><br><span class="line">        threadOperation.executorService.shutdown();</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 多线程发送</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> phoneList</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">multiThreadSend</span><span class="params">(List&lt;String&gt; phoneList)</span> </span>&#123;</span><br><span class="line">        List&lt;Future&lt;Long&gt;&gt; futures = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> threadNo = <span class="number">0</span>; threadNo &lt; THREAD_POOL_SIZE; threadNo++) &#123;</span><br><span class="line">            <span class="keyword">int</span> numbersPerThread = <span class="number">100</span>;</span><br><span class="line">            List&lt;String&gt; list = phoneList.subList(threadNo * numbersPerThread, (threadNo * numbersPerThread) + <span class="number">100</span>);</span><br><span class="line">            Future&lt;Long&gt; future = threadOperation.executorService.submit(threadOperation.new SendMsgImplCallable(list, String.valueOf(threadNo)));</span><br><span class="line">            futures.add(future);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span> (Future&lt;Long&gt; future : futures) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                System.out.println(future.get());</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (ExecutionException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        threadOperation.executorService.shutdown();</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SendMsgExtendThread</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line"> </span><br><span class="line">        <span class="keyword">private</span> List&lt;String&gt; numberListByThread;</span><br><span class="line"> </span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="title">SendMsgExtendThread</span><span class="params">(List&lt;String&gt; numberList)</span> </span>&#123;</span><br><span class="line">            numberListByThread = numberList;</span><br><span class="line">        &#125;</span><br><span class="line"> </span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">long</span> startTime = System.currentTimeMillis();</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; numberListByThread.size(); i++) &#123;</span><br><span class="line">                System.out.print(<span class="string">"no."</span> + (i + <span class="number">1</span>));</span><br><span class="line">                sendMsgToPhone(numberListByThread.get(i));</span><br><span class="line">            &#125;</span><br><span class="line">            System.out.println(<span class="string">"== single thread send "</span> + numberListByThread.size() + <span class="string">"execute time:"</span> + (System.currentTimeMillis() - startTime) + <span class="string">" ms"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SendMsgImplCallable</span> <span class="keyword">implements</span> <span class="title">Callable</span>&lt;<span class="title">Long</span>&gt; </span>&#123;</span><br><span class="line"> </span><br><span class="line">        <span class="keyword">private</span> List&lt;String&gt; numberListByThread;</span><br><span class="line"> </span><br><span class="line">        <span class="keyword">private</span> String threadName;</span><br><span class="line"> </span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="title">SendMsgImplCallable</span><span class="params">(List&lt;String&gt; numberList, String threadName)</span> </span>&#123;</span><br><span class="line">            numberListByThread = numberList;</span><br><span class="line">            <span class="keyword">this</span>.threadName = threadName;</span><br><span class="line">        &#125;</span><br><span class="line"> </span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> Long <span class="title">call</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">            Long startMills = System.currentTimeMillis();</span><br><span class="line">            <span class="keyword">for</span> (String number : numberListByThread) &#123;</span><br><span class="line">                sendMsgToPhone(number);</span><br><span class="line">            &#125;</span><br><span class="line">            Long endMills = System.currentTimeMillis();</span><br><span class="line">            <span class="keyword">return</span> endMills - startMills;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>hahaha</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/01/24/yuque/Trie 树/" rel="next" title="Trie 树">
+                <i class="fa fa-chevron-left"></i> Trie 树
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/25/yuque/常用的sql语句/" rel="prev" title="常用的sql语句">
+                常用的sql语句 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">临安的风</p>
+              <p class="site-description motion-element" itemprop="description">网络资源搬运工 Java Spring 面试 数据库 算法 zk dubbo 分布式 redis React Flutter anything</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#读取Excel中的信息"><span class="nav-number">1.</span> <span class="nav-text">读取Excel中的信息</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#包依赖"><span class="nav-number">1.1.</span> <span class="nav-text">包依赖</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#读取Excel的工具类代码"><span class="nav-number">1.2.</span> <span class="nav-text">读取Excel的工具类代码</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#模拟运营商发送短信的方法"><span class="nav-number">2.</span> <span class="nav-text">模拟运营商发送短信的方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多线程发短信"><span class="nav-number">3.</span> <span class="nav-text">多线程发短信</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#简单的单线程发送"><span class="nav-number">3.1.</span> <span class="nav-text">简单的单线程发送</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#两个线程的示例"><span class="nav-number">3.2.</span> <span class="nav-text">两个线程的示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#另一种数据分组方式"><span class="nav-number">3.3.</span> <span class="nav-text">另一种数据分组方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#线程池发送"><span class="nav-number">3.4.</span> <span class="nav-text">线程池发送</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用Callable发送"><span class="nav-number">3.5.</span> <span class="nav-text">使用Callable发送</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">都来自于互联网</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

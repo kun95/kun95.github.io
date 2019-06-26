@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Java,Spring,Mybatis,面试,分布式,多线程,数据库,优化,并发,React,Flutter">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="简介前两篇文章介绍了泛型的基本用法、类型擦除以及泛型数组。在泛型的使用中，还有个重要的东西叫通配符，本文介绍通配符的使用。 这个系列的另外两篇文章：  Java 泛型总结（一）：基本用法与类型擦除 Java 泛型总结（二）：泛型与数组  数组的协变在了解通配符之前，先来了解一下数组。Java 中的数组是协变的，什么意思？看下面的例子： class Fruit {} class Apple exte">
+<meta name="keywords" content="网络资源搬运工 Java Spring 面试 数据库 算法 zk dubbo 分布式 redis React Flutter anything">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java 泛型总结（三）：通配符的使用 - Coding - SegmentFault 思否">
+<meta property="og:url" content="http://yoursite.com/2019/01/22/yuque/Java 泛型总结（三）：通配符的使用 - Coding - SegmentFault 思否/index.html">
+<meta property="og:site_name" content="My Blogs">
+<meta property="og:description" content="简介前两篇文章介绍了泛型的基本用法、类型擦除以及泛型数组。在泛型的使用中，还有个重要的东西叫通配符，本文介绍通配符的使用。 这个系列的另外两篇文章：  Java 泛型总结（一）：基本用法与类型擦除 Java 泛型总结（二）：泛型与数组  数组的协变在了解通配符之前，先来了解一下数组。Java 中的数组是协变的，什么意思？看下面的例子： class Fruit {} class Apple exte">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2019-06-26T11:34:40.485Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Java 泛型总结（三）：通配符的使用 - Coding - SegmentFault 思否">
+<meta name="twitter:description" content="简介前两篇文章介绍了泛型的基本用法、类型擦除以及泛型数组。在泛型的使用中，还有个重要的东西叫通配符，本文介绍通配符的使用。 这个系列的另外两篇文章：  Java 泛型总结（一）：基本用法与类型擦除 Java 泛型总结（二）：泛型与数组  数组的协变在了解通配符之前，先来了解一下数组。Java 中的数组是协变的，什么意思？看下面的例子： class Fruit {} class Apple exte">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"always","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/01/22/yuque/Java 泛型总结（三）：通配符的使用 - Coding - SegmentFault 思否/">
+
+
+
+
+
+  <title>Java 泛型总结（三）：通配符的使用 - Coding - SegmentFault 思否 | My Blogs</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">My Blogs</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">求知若渴 虚心若愚</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-主页"></i> <br>
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-归档"></i> <br>
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            Search
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/22/yuque/Java 泛型总结（三）：通配符的使用 - Coding - SegmentFault 思否/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="临安的风">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="My Blogs">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Java 泛型总结（三）：通配符的使用 - Coding - SegmentFault 思否</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-01-22T12:57:08+08:00">
+                2019-01-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>前两篇文章介绍了泛型的基本用法、类型擦除以及泛型数组。在泛型的使用中，还有个重要的东西叫通配符，本文介绍通配符的使用。</p>
+<p>这个系列的另外两篇文章：</p>
+<ul>
+<li><a href="https://segmentfault.com/a/1190000005179142" target="_blank" rel="noopener">Java 泛型总结（一）：基本用法与类型擦除</a></li>
+<li><a href="https://segmentfault.com/a/1190000005179147" target="_blank" rel="noopener">Java 泛型总结（二）：泛型与数组</a></li>
+</ul>
+<h2 id="数组的协变"><a href="#数组的协变" class="headerlink" title="数组的协变"></a>数组的协变</h2><p>在了解通配符之前，先来了解一下数组。Java 中的数组是<strong>协变</strong>的，什么意思？看下面的例子：</p>
+<pre><code>class Fruit {}
+class Apple extends Fruit {}
+class Jonathan extends Apple {}
+class Orange extends Fruit {}
+
+public class CovariantArrays {
+    public static void main(String[] args) {       
+        Fruit[] fruit = new Apple[10];
+        fruit[0] = new Apple(); 
+        fruit[1] = new Jonathan(); 
+
+        try {
+
+            fruit[0] = new Fruit(); 
+        } catch(Exception e) { System.out.println(e); }
+        try {
+
+            fruit[0] = new Orange(); 
+        } catch(Exception e) { System.out.println(e); }
+        }
+} </code></pre><p><code>main</code> 方法中的第一行，创建了一个 <code>Apple</code> 数组并把它赋给 <code>Fruit</code> 数组的引用。这是有意义的，<code>Apple</code> 是 <code>Fruit</code> 的子类，一个 <code>Apple</code> 对象也是一种 <code>Fruit</code> 对象，所以一个 <code>Apple</code> 数组也是一种 <code>Fruit</code> 的数组。这称作<strong>数组的协变</strong>，Java 把数组设计为协变的，对此是有争议的，有人认为这是一种缺陷。</p>
+<p>尽管 <code>Apple[]</code> 可以 “向上转型” 为 <code>Fruit[]</code>，但数组元素的实际类型还是 <code>Apple</code>，我们只能向数组中放入 <code>Apple</code>或者 <code>Apple</code> 的子类。在上面的代码中，向数组中放入了 <code>Fruit</code> 对象和 <code>Orange</code> 对象。对于编译器来说，这是可以通过编译的，但是在运行时期，JVM 能够知道数组的实际类型是 <code>Apple[]</code>，所以当其它对象加入数组的时候就会抛出异常。</p>
+<p>泛型设计的目的之一是要使这种运行时期的错误在编译期就能发现，看看用泛型容器类来代替数组会发生什么：</p>
+<pre><code>ArrayList&lt;Fruit&gt; flist = new ArrayList&lt;Apple&gt;();</code></pre><p>上面的代码根本就无法编译。当涉及到泛型时， 尽管 <code>Apple</code> 是 <code>Fruit</code> 的子类型，但是 <code>ArrayList&lt;Apple&gt;</code> 不是 <code>ArrayList&lt;Fruit&gt;</code> 的子类型，泛型不支持协变。</p>
+<h2 id="使用通配符"><a href="#使用通配符" class="headerlink" title="使用通配符"></a>使用通配符</h2><p>从上面我们知道，<code>List&lt;Number&gt; list = ArrayList&lt;Integer&gt;</code> 这样的语句是无法通过编译的，尽管 <code>Integer</code> 是 <code>Number</code> 的子类型。那么如果我们确实需要建立这种 “向上转型” 的关系怎么办呢？这就需要通配符来发挥作用了。</p>
+<h3 id="上边界限定通配符"><a href="#上边界限定通配符" class="headerlink" title="上边界限定通配符"></a>上边界限定通配符</h3><p>利用 <code>&lt;? extends Fruit&gt;</code> 形式的通配符，可以实现泛型的向上转型：</p>
+<pre><code>public class GenericsAndCovariance {
+    public static void main(String[] args) {
+
+        List&lt;? extends Fruit&gt; flist = new ArrayList&lt;Apple&gt;();
+
+
+
+
+        flist.add(null); 
+
+        Fruit f = flist.get(0);
+    }
+}</code></pre><p>上面的例子中， <code>flist</code> 的类型是 <code>List&lt;? extends Fruit&gt;</code>，我们可以把它读作：一个类型的 List， 这个类型可以是继承了 <code>Fruit</code> 的某种类型。注意，<strong>这并不是说这个 List 可以持有</strong> <code>Fruit</code> <strong>的任意类型</strong>。通配符代表了一种特定的类型，它表示 “某种特定的类型，但是 <code>flist</code> 没有指定”。这样不太好理解，具体针对这个例子解释就是，<code>flist</code> 引用可以指向某个类型的 List，只要这个类型继承自 <code>Fruit</code>，可以是 <code>Fruit</code> 或者 <code>Apple</code>，比如例子中的 <code>new ArrayList&lt;Apple&gt;</code>，但是为了向上转型给 <code>flist</code>，<code>flist</code> 并不关心这个具体类型是什么。</p>
+<p>如上所述，通配符 <code>List&lt;? extends Fruit&gt;</code> 表示某种特定类型 ( <code>Fruit</code> 或者其子类 ) 的 List，但是并不关心这个实际的类型到底是什么，反正是 <code>Fruit</code> 的子类型，<code>Fruit</code> 是它的上边界。那么对这样的一个 List 我们能做什么呢？其实如果我们不知道这个 List 到底持有什么类型，怎么可能安全的添加一个对象呢？在上面的代码中，向 <code>flist</code> 中添加任何对象，无论是 <code>Apple</code> 还是 <code>Orange</code> 甚至是 <code>Fruit</code> 对象，编译器都不允许，唯一可以添加的是 <code>null</code>。所以如果做了泛型的向上转型 (<code>List&lt;? extends Fruit&gt; flist = new ArrayList&lt;Apple&gt;()</code>)，那么我们也就失去了向这个 List 添加任何对象的能力，即使是 <code>Object</code> 也不行。</p>
+<p>另一方面，如果调用某个返回 <code>Fruit</code> 的方法，这是安全的。因为我们知道，在这个 List 中，不管它实际的类型到底是什么，但肯定能转型为 <code>Fruit</code>，所以编译器允许返回 <code>Fruit</code>。</p>
+<p>了解了通配符的作用和限制后，好像任何接受参数的方法我们都不能调用了。其实倒也不是，看下面的例子：</p>
+<pre><code>public class CompilerIntelligence {
+    public static void main(String[] args) {
+        List&lt;? extends Fruit&gt; flist =
+        Arrays.asList(new Apple());
+        Apple a = (Apple)flist.get(0); 
+        flist.contains(new Apple()); 
+        flist.indexOf(new Apple()); 
+
+
+
+    }
+}</code></pre><p>在上面的例子中，<code>flist</code> 的类型是 <code>List&lt;? extends Fruit&gt;</code>，泛型参数使用了受限制的通配符，所以我们失去了向其中加入任何类型对象的例子，最后一行代码无法编译。</p>
+<p>但是 <code>flist</code> 却可以调用 <code>contains</code> 和 <code>indexOf</code> 方法，它们都接受了一个 <code>Apple</code> 对象做参数。如果查看 <code>ArrayList</code> 的源代码，可以发现 <code>add()</code> 接受一个泛型类型作为参数，但是 <code>contains</code> 和 <code>indexOf</code> 接受一个 <code>Object</code> 类型的参数，下面是它们的方法签名：</p>
+<pre><code>public boolean add(E e)
+public boolean contains(Object o)
+public int indexOf(Object o)</code></pre><p>所以如果我们指定泛型参数为 <code>&lt;? extends Fruit&gt;</code> 时，<code>add()</code> 方法的参数变为 <code>? extends Fruit</code>，编译器无法判断这个参数接受的到底是 <code>Fruit</code> 的哪种类型，所以它不会接受任何类型。</p>
+<p>然而，<code>contains</code> 和 <code>indexOf</code> 的类型是 <code>Object</code>，并没有涉及到通配符，所以编译器允许调用这两个方法。这意味着一切取决于泛型类的编写者来决定那些调用是 “安全” 的，并且用 <code>Object</code> 作为这些安全方法的参数。如果某些方法不允许类型参数是通配符时的调用，这些方法的参数应该用类型参数，比如 <code>add(E e)</code>。</p>
+<p>当我们自己编写泛型类时，上面介绍的就有用了。下面编写一个 <code>Holder</code> 类：</p>
+<pre><code>public class Holder&lt;T&gt; {
+    private T value;
+    public Holder() {}
+    public Holder(T val) { value = val; }
+    public void set(T val) { value = val; }
+    public T get() { return value; }
+    public boolean equals(Object obj) {
+    return value.equals(obj);
+    }
+    public static void main(String[] args) {
+        Holder&lt;Apple&gt; Apple = new Holder&lt;Apple&gt;(new Apple());
+        Apple d = Apple.get();
+        Apple.set(d);
+
+        Holder&lt;? extends Fruit&gt; fruit = Apple; 
+        Fruit p = fruit.get();
+        d = (Apple)fruit.get(); 
+        try {
+            Orange c = (Orange)fruit.get(); 
+        } catch(Exception e) { System.out.println(e); }
+
+
+        System.out.println(fruit.equals(d)); 
+    }
+} </code></pre><p>在 <code>Holer</code> 类中，<code>set()</code> 方法接受类型参数 <code>T</code> 的对象作为参数，<code>get()</code> 返回一个 <code>T</code> 类型，而 <code>equals()</code> 接受一个 <code>Object</code> 作为参数。<code>fruit</code> 的类型是 <code>Holder&lt;? extends Fruit&gt;</code>，所以<code>set()</code>方法不会接受任何对象的添加，但是 <code>equals()</code> 可以正常工作。</p>
+<h3 id="下边界限定通配符"><a href="#下边界限定通配符" class="headerlink" title="下边界限定通配符"></a>下边界限定通配符</h3><p>通配符的另一个方向是　“超类型的通配符“: <code>? super T</code>，<code>T</code> 是类型参数的下界。使用这种形式的通配符，我们就可以 ”传递对象” 了。还是用例子解释：</p>
+<pre><code>public class SuperTypeWildcards {
+    static void writeTo(List&lt;? super Apple&gt; apples) {
+        apples.add(new Apple());
+        apples.add(new Jonathan());
+
+    }
+}</code></pre><p><code>writeTo</code> 方法的参数 <code>apples</code> 的类型是 <code>List&lt;? super Apple&gt;</code>，它表示某种类型的 List，这个类型是 <code>Apple</code> 的基类型。也就是说，我们不知道实际类型是什么，但是这个类型肯定是 <code>Apple</code> 的父类型。因此，我们可以知道向这个 List 添加一个 <code>Apple</code> 或者其子类型的对象是安全的，这些对象都可以向上转型为 <code>Apple</code>。但是我们不知道加入 <code>Fruit</code> 对象是否安全，因为那样会使得这个 List 添加跟 <code>Apple</code> 无关的类型。</p>
+<p>在了解了子类型边界和超类型边界之后，我们就可以知道如何向泛型类型中 “写入” ( 传递对象给方法参数) 以及如何从泛型类型中 “读取” ( 从方法中返回对象 )。下面是一个例子：</p>
+<pre><code>public class Collections { 
+  public static &lt;T&gt; void copy(List&lt;? super T&gt; dest, List&lt;? extends T&gt; src) 
+  {
+      for (int i=0; i&lt;src.size(); i++) 
+        dest.set(i,src.get(i)); 
+  } 
+}</code></pre><p><code>src</code> 是原始数据的 List，因为要从这里面读取数据，所以用了上边界限定通配符：<code>&lt;? extends T&gt;</code>，取出的元素转型为 <code>T</code>。<code>dest</code> 是要写入的目标 List，所以用了下边界限定通配符：<code>&lt;? super T&gt;</code>，可以写入的元素类型是 <code>T</code> 及其子类型。</p>
+<h3 id="无边界通配符"><a href="#无边界通配符" class="headerlink" title="无边界通配符"></a>无边界通配符</h3><p>还有一种通配符是无边界通配符，它的使用形式是一个单独的问号：<code>List&lt;?&gt;</code>，也就是没有任何限定。不做任何限制，跟不用类型参数的 <code>List</code> 有什么区别呢？</p>
+<p><code>List&lt;?&gt; list</code> 表示 <code>list</code> 是持有某种特定类型的 List，但是不知道具体是哪种类型。那么我们可以向其中添加对象吗？当然不可以，因为并不知道实际是哪种类型，所以不能添加任何类型，这是不安全的。而单独的 <code>List list</code> ，也就是没有传入泛型参数，表示这个 list 持有的元素的类型是 <code>Object</code>，因此可以添加任何类型的对象，只不过编译器会有警告信息。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通配符的使用可以对泛型参数做出某些限制，使代码更安全，对于上边界和下边界限定的通配符总结如下：</p>
+<ul>
+<li>使用 <code>List&lt;? extends C&gt; list</code> 这种形式，表示 list 可以引用一个 <code>ArrayList</code> ( 或者其它 List 的 子类 ) 的对象，这个对象包含的元素类型是 <code>C</code> 的子类型 ( 包含 <code>C</code> 本身）的一种。</li>
+<li>使用 <code>List&lt;? super C&gt; list</code> 这种形式，表示 list 可以引用一个 <code>ArrayList</code> ( 或者其它 List 的 子类 ) 的对象，这个对象包含的元素就类型是 <code>C</code> 的超类型 ( 包含 <code>C</code> 本身 ) 的一种。</li>
+</ul>
+<p>大多数情况下泛型的使用比较简单，但是如果自己编写支持泛型的代码需要对泛型有深入的了解。这几篇文章介绍了泛型的基本用法、类型擦除、泛型数组以及通配符的使用，涵盖了最常用的要点，泛型的总结就写到这里。</p>
+<p><strong>参考</strong></p>
+<ul>
+<li>Java 编程思想</li>
+</ul>
+<p><strong><em>如果我的文章对您有帮助，不妨点个赞支持一下(^\</em>^)_</strong></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/01/22/yuque/Java 泛型总结（一）：基本用法与类型擦除 - Coding - SegmentFault 思否/" rel="next" title="Java 泛型总结（一）：基本用法与类型擦除 - Coding - SegmentFault 思否">
+                <i class="fa fa-chevron-left"></i> Java 泛型总结（一）：基本用法与类型擦除 - Coding - SegmentFault 思否
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/01/24/yuque/Trie 树/" rel="prev" title="Trie 树">
+                Trie 树 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">临安的风</p>
+              <p class="site-description motion-element" itemprop="description">网络资源搬运工 Java Spring 面试 数据库 算法 zk dubbo 分布式 redis React Flutter anything</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#简介"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#数组的协变"><span class="nav-number">2.</span> <span class="nav-text">数组的协变</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用通配符"><span class="nav-number">3.</span> <span class="nav-text">使用通配符</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#上边界限定通配符"><span class="nav-number">3.1.</span> <span class="nav-text">上边界限定通配符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#下边界限定通配符"><span class="nav-number">3.2.</span> <span class="nav-text">下边界限定通配符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#无边界通配符"><span class="nav-number">3.3.</span> <span class="nav-text">无边界通配符</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">都来自于互联网</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

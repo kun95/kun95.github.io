@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Java,Spring,Mybatis,面试,分布式,多线程,数据库,优化,并发,React,Flutter">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="一般的DBMS系统，默认都会使用读提交（Read-Comitted，RC）作为默认隔离级别，如Oracle、SQL Server等，而MySQL却使用可重复读（Read-Repeatable，RR）。要知道，越高的隔离级别，能解决的数据一致性问题越多，理论上性能损耗更大，可并发性越低。隔离级别依次为 SERIALIZABLE &amp;gt; RR &amp;gt; RC &amp;gt; Read-Uncommited">
+<meta name="keywords" content="网络资源搬运工 Java Spring 面试 数据库 算法 zk dubbo 分布式 redis React Flutter anything">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL使用可重复读作为默认隔离级别的原因 - vinchen - 博客园">
+<meta property="og:url" content="http://yoursite.com/2019/02/27/yuque/MySQL使用可重复读作为默认隔离级别的原因 - vinchen - 博客园/index.html">
+<meta property="og:site_name" content="My Blogs">
+<meta property="og:description" content="一般的DBMS系统，默认都会使用读提交（Read-Comitted，RC）作为默认隔离级别，如Oracle、SQL Server等，而MySQL却使用可重复读（Read-Repeatable，RR）。要知道，越高的隔离级别，能解决的数据一致性问题越多，理论上性能损耗更大，可并发性越低。隔离级别依次为 SERIALIZABLE &amp;gt; RR &amp;gt; RC &amp;gt; Read-Uncommited">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2019-06-26T11:34:40.477Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL使用可重复读作为默认隔离级别的原因 - vinchen - 博客园">
+<meta name="twitter:description" content="一般的DBMS系统，默认都会使用读提交（Read-Comitted，RC）作为默认隔离级别，如Oracle、SQL Server等，而MySQL却使用可重复读（Read-Repeatable，RR）。要知道，越高的隔离级别，能解决的数据一致性问题越多，理论上性能损耗更大，可并发性越低。隔离级别依次为 SERIALIZABLE &amp;gt; RR &amp;gt; RC &amp;gt; Read-Uncommited">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"always","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: 'Author'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/02/27/yuque/MySQL使用可重复读作为默认隔离级别的原因 - vinchen - 博客园/">
+
+
+
+
+
+  <title>MySQL使用可重复读作为默认隔离级别的原因 - vinchen - 博客园 | My Blogs</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">My Blogs</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">求知若渴 虚心若愚</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-主页"></i> <br>
+            
+            Home
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-归档"></i> <br>
+            
+            Archives
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            Search
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/27/yuque/MySQL使用可重复读作为默认隔离级别的原因 - vinchen - 博客园/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="临安的风">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="My Blogs">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">MySQL使用可重复读作为默认隔离级别的原因 - vinchen - 博客园</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2019-02-27T14:05:18+08:00">
+                2019-02-27
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>一般的DBMS系统，默认都会使用读提交（Read-Comitted，RC）作为默认隔离级别，如Oracle、SQL Server等，而MySQL却使用可重复读（Read-Repeatable，RR）。要知道，越高的隔离级别，能解决的数据一致性问题越多，理论上性能损耗更大，可并发性越低。隔离级别依次为</p>
+<p>SERIALIZABLE &gt; RR &gt; RC &gt; Read-Uncommited</p>
+<p>在SQL标准中，前三种隔离级别分别解决了幻象读、不可重复读和脏读的问题。那么，为什么MySQL使用可重复读作为默认隔离级别呢？</p>
+<p>Binlog是MySQL的逻辑操作日志，广泛应用于复制和恢复。MySQL 5.1以前，Statement是Binlog的默认格式，即依次记录系统接受的SQL请求；5.1及以后，MySQL提供了Row和Mixed两个Binlog格式。</p>
+<p>从MySQL 5.1开始，如果打开语句级Binlog，就不支持RC和Read-Uncommited隔离级别。要想使用RC隔离级别，必须使用Mixed或Row格式。</p>
+<p>mysql&gt; set tx_isolation=’read-committed’;</p>
+<p>Query OK, 0 rows affected (0.00 sec)</p>
+<p>mysql&gt; insert into t1 values(1,1);</p>
+<p>ERROR 1598 (HY000): Binary logging not possible. Message: Transaction level ‘READ-COMMITTED’ in InnoDB is not safe for binlog mode ‘STATEMENT’</p>
+<p>那么，为什么RC隔离级别不支持语句级Binlog呢？我们关闭binlog，做以下测试。</p>
+<p>会话1</p>
+<p>会话2</p>
+<p>use test;</p>
+<p>#初始化数据</p>
+<p>create table t1(c1 int, c2 int) engine=innodb;</p>
+<p>create table t2(c1 int, c2 int) engine=innodb;</p>
+<p>insert into t1 values(1,1), (2,2);</p>
+<p>insert into t2 values(1,1), (2,2);</p>
+<p>#设置隔离级别</p>
+<p>set tx_isolation=’read-committed’;</p>
+<p>Query OK, 0 rows affected (0.00 sec)</p>
+<p>#连续更新两次</p>
+<p>mysql&gt; Begin;</p>
+<p>Query OK, 0 rows affected (0.03 sec)</p>
+<p>mysql&gt; update t2 set c2 = 3 where c1 in (select c1 from t1);</p>
+<p>Query OK, 2 rows affected (0.00 sec)</p>
+<p>Rows matched: 2  Changed: 2  Warnings: 0</p>
+<p>mysql&gt; update t2 set c2 = 4 where c1 in (select c1 from t1);</p>
+<p>Query OK, 1 row affected (0.00 sec)</p>
+<p>Rows matched: 1  Changed: 1  Warnings: 0</p>
+<p>mysql&gt; select * from t2;</p>
+<p>+——+——+</p>
+<p>| c1   | c2   |</p>
+<p>+——+——+</p>
+<p>|    1 |    4 |</p>
+<p>|    2 |    3 |</p>
+<p>+——+——+</p>
+<p>2 rows in set (0.00 sec)</p>
+<p>mysql&gt; commit;</p>
+<p>#设置隔离级别</p>
+<p>set tx_isolation=’read-committed’;</p>
+<p>Query OK, 0 rows affected (0.00 sec)</p>
+<p>#两次更新之间执行删除</p>
+<p>mysql&gt; delete from t1 where c1 = 2;</p>
+<p>Query OK, 1 row affected (0.03 sec)</p>
+<p>由以上测试知，RC隔离级别下，会话2执行时序在会话1事务的语句之间，并且会话2的操作影响了会话1的结果，这会对Binlog结果造成影响。</p>
+<p>由于Binlog中语句的顺序以commit为序，如果语句级Binlog允许，两会话的执行时序是</p>
+<p>#会话2</p>
+<p>set tx_isolation=’read-committed’;</p>
+<p>delete from t1 where c1 = 2;</p>
+<p>commit;</p>
+<p>#会话1</p>
+<p>set tx_isolation=’read-committed’;</p>
+<p>Begin;</p>
+<p>update t2 set c2 = 3 where c1 in (select c1 from t1);</p>
+<p>update t2 set c2 = 4 where c1 in (select c1 from t1);</p>
+<p>select * from t2;</p>
+<p>+——+——+</p>
+<p>| c1   | c2   |</p>
+<p>+——+——+</p>
+<p>|    1 |    4 |</p>
+<p>|    2 |    2 |</p>
+<p>+——+——+</p>
+<p>2 rows in set (0.00 sec)</p>
+<p>commit;</p>
+<p>由上可知，在MySQL 5.1及以上的RC隔离级别下，语句级Binlog在DR上执行的结果是不正确的！</p>
+<p>那么，MySQL 5.0呢？5.0允许RC下语句级Binlog，是不是说很容易产生DB/DR不一致呢？</p>
+<p>事实上，在5.0重复上述一个测试，并不存在这个问题，原因是5.0的RC与5.1的RR使用类似的并发和上锁机制，也就是说，MySQL 5.0的RC与5.1及以上的RC可能存在兼容性问题。</p>
+<p>下面看看RR是怎么解决这个问题的。</p>
+<p>导致RC隔离级别DB/DR不一致的原因是：RC不可重复读，而Binlog要求SQL串行化！</p>
+<p>在RR下，重复以上测试</p>
+<p>会话1</p>
+<p>会话2</p>
+<p>use test;</p>
+<p>#初始化数据</p>
+<p>create table t1(c1 int, c2 int) engine=innodb;</p>
+<p>create table t2(c1 int, c2 int) engine=innodb;</p>
+<p>insert into t1 values(1,1), (2,2);</p>
+<p>insert into t2 values(1,1), (2,2);</p>
+<p>#设置隔离级别</p>
+<p>set tx_isolation=’repeatable-read’;</p>
+<p>Query OK, 0 rows affected (0.00 sec)</p>
+<p>#连续更新两次</p>
+<p>mysql&gt; Begin;</p>
+<p>Query OK, 0 rows affected (0.03 sec)</p>
+<p>mysql&gt; update t2 set c2 = 3 where c1 in (select c1 from t1);</p>
+<p>Query OK, 2 rows affected (0.00 sec)</p>
+<p>Rows matched: 2  Changed: 2  Warnings: 0</p>
+<p>mysql&gt; update t2 set c2 = 4 where c1 in (select c1 from t1);</p>
+<p>Query OK, 2 rows affected (0.00 sec)</p>
+<p>Rows matched: 2  Changed: 2  Warnings: 0</p>
+<p>mysql&gt; select * from t2;</p>
+<p>+——+——+</p>
+<p>| c1   | c2   |</p>
+<p>+——+——+</p>
+<p>|    1 |    4 |</p>
+<p>|    2 |    4 |</p>
+<p>+——+——+</p>
+<p>2 rows in set (0.00 sec)</p>
+<p>mysql&gt; commit;</p>
+<p>#设置隔离级别</p>
+<p>set tx_isolation=’ repeatable-read’;</p>
+<p>Query OK, 0 rows affected (0.00 sec)</p>
+<p>#两次更新之间执行删除</p>
+<p>mysql&gt; delete from t1 where c1 = 2;</p>
+<p>–阻塞，直到会话1提交</p>
+<p>Query OK, 1 row affected (18.94 sec)</p>
+<p>与RC隔离级别不同的是，在RR中，由于保证可重复读，会话2的delete语句会被会话1阻塞，直到会话1提交。</p>
+<p>在RR中，会话1语句update t2 set c2 = 3 where c1 in (select c1 from t1)会先在t1的记录上S锁（5.1的RC中不会上这个锁，但5.0的RC会），接着在t2的满足条件的记录上X锁。由于会话1没提交，会话2的delete语句需要等待会话1的S锁释放，于是阻塞。</p>
+<p>因此，在RR中，以上测试会话1、会话2的依次执行，与Binlog的顺序一致，从而保证DB/DR一致。</p>
+<p><a name="d5zrtw"></a></p>
+<h2 id="幻象读"><a href="#幻象读" class="headerlink" title="幻象读"></a><a href="#d5zrtw"></a>幻象读</h2><p>除了保证可重复读，MySQL的RR还一定程度上避免了幻象读（幻象读是由于插入导致的新记录）。（为什么说一定程度呢？参考第3节可重复读和串行化的区别。）</p>
+<p>会话1</p>
+<p>会话2</p>
+<p>use test;</p>
+<p>#初始化数据</p>
+<p>create table t1(c1 int primary key, c2 int) engine=innodb;</p>
+<p>create table t2(c1 int primary key, c2 int) engine=innodb;</p>
+<p>insert into t1 values(1,1), (10,10);</p>
+<p>insert into t2 values(1,1), (5,5), (10,10);</p>
+<p>#设置隔离级别</p>
+<p>set tx_isolation=’repeatable-read’;</p>
+<p>Query OK, 0 rows affected (0.00 sec)</p>
+<p>#连续更新两次</p>
+<p>mysql&gt; Begin;</p>
+<p>Query OK, 0 rows affected (0.03 sec)</p>
+<p>mysql&gt; update t2 set c2 = 20 where c1 in (select c1 from t1);</p>
+<p>Query OK, 2 rows affected (0.00 sec)</p>
+<p>Rows matched: 2  Changed: 2  Warnings: 0</p>
+<p>mysql&gt; delete from where c1 in (select c1 from t1);</p>
+<p>Query OK, 2 rows affected (0.00 sec)</p>
+<p>Rows matched: 2  Changed: 2  Warnings: 0</p>
+<p>mysql&gt; select * from t2;</p>
+<p>+——+——+</p>
+<p>| c1   | c2   |</p>
+<p>+——+——+</p>
+<p>|    5 |    5 |</p>
+<p>+——+——+</p>
+<p>2 rows in set (0.00 sec)</p>
+<p>mysql&gt; commit;</p>
+<p>#设置隔离级别</p>
+<p>set tx_isolation=’ repeatable-read’;</p>
+<p>Query OK, 0 rows affected (0.00 sec)</p>
+<p>#两次更新之间执行插入</p>
+<p>mysql&gt; insert into t1 values(5,5);</p>
+<p>–阻塞，直到会话1提交</p>
+<p>Query OK, 1 row affected (18.94 sec)</p>
+<p>由上述例子知，会话2的插入操作被阻塞了，原因是RR隔离级别中，除了记录锁外，还会上间隙锁(gap锁)。例如，对于表t1，update t2 set c2 = 20 where c1 in (select c1 from t1)以上的锁包括：</p>
+<p>(-∞, 1), 1, (1, 10), 10, (10, +∞)</p>
+<p>由于对t1做全表扫描，因此，所有记录和间隙都要上锁，其中(x,y)表示间隙锁，数字表示记录锁，全部都是S锁。会话2的insert操作插入5，位于间隙(1,10)，需要获得这个间隙的X锁，因此两操作互斥，会话2阻塞。</p>
+<p>SQL标准的RR并不要求避免幻象读，而InnoDB通过gap锁来避免幻象，从而实现SQL的可串行化，保证Binlog的一致性。</p>
+<p>要想取消gap lock，可使用参数<a href="#sysvar_innodb_locks_unsafe_for_binlog">innodb_lock_unsafe_for_binlog</a>=1，默认为0。</p>
+<p>InnoDB的RR可以避免不可重复读和幻象读，那么与串行化有什么区别呢？</p>
+<p>会话1</p>
+<p>会话2</p>
+<p>use test;</p>
+<p>#初始化数据</p>
+<p>create table t3(c1 int primary key, c2 int) engine=innodb;</p>
+<p>#设置隔离级别</p>
+<p>set tx_isolation=’repeatable-read’;</p>
+<p>Query OK, 0 rows affected (0.00 sec)</p>
+<p>mysql&gt; Begin;</p>
+<p>Query OK, 0 rows affected (0.03 sec)</p>
+<p>mysql&gt; select * from t3 where c1 = 1;</p>
+<p>Empty set (0.00 sec)</p>
+<p>mysql&gt; select * from t3 where c1 = 1;</p>
+<p>Empty set (0.00 sec)</p>
+<p>mysql&gt; update t3 set c2 =2 where c1 = 1;</p>
+<p>Query OK, 1 row affected (0.00 sec)</p>
+<p>Rows matched: 1  Changed: 1  Warnings: 0</p>
+<p>mysql&gt; select * from t3 where c1 = 1;</p>
+<p>+—-+——+</p>
+<p>| c1 | c2   |</p>
+<p>+—-+——+</p>
+<p>|  1 |    2 |</p>
+<p>+—-+——+</p>
+<p>1 row in set (0.00 sec)</p>
+<p>mysql&gt; commit;</p>
+<p>#设置隔离级别</p>
+<p>set tx_isolation=’ repeatable-read’;</p>
+<p>Query OK, 0 rows affected (0.00 sec)</p>
+<p>mysql&gt; insert into t3 values(1,1);</p>
+<p>Query OK, 1 row affected (0.05 sec)</p>
+<p>由上述会话1中，连续两次读不到数据，但更新却成功，并且更新后的相同读操作就能读到数据了，这算不算幻读呢？</p>
+<p>其实，RR隔离级别的防止幻象主要是针对写操作的，即只保证写操作的可串行化，因为只有写操作影响Binlog；而读操作是通过MVCC来保证一致性读（无幻象）。</p>
+<p>然而，可串行化隔离级别要求读写可串行化。使用可串行化重做以上测试。</p>
+<p>会话1</p>
+<p>会话2</p>
+<p>use test;</p>
+<p>#初始化数据</p>
+<p>create table t3(c1 int primary key, c2 int) engine=innodb;</p>
+<p>#设置隔离级别</p>
+<p>set tx_isolation=’SERIALIZABLE’;</p>
+<p>Query OK, 0 rows affected (0.00 sec)</p>
+<p>mysql&gt; Begin;</p>
+<p>Query OK, 0 rows affected (0.03 sec)</p>
+<p>mysql&gt; select * from t3 where c1 = 1;</p>
+<p>Empty set (0.00 sec)</p>
+<p>mysql&gt; select * from t3 where c1 = 1;</p>
+<p>Empty set (0.00 sec)</p>
+<p>mysql&gt; update t3 set c2 =2 where c1 = 1;</p>
+<p>Query OK, 0 rows affected (0.00 sec)</p>
+<p>Rows matched: 0  Changed: 0  Warnings: 0</p>
+<p>mysql&gt; select * from t3 where c1 = 1;</p>
+<p>Empty set (0.00 sec)</p>
+<p>mysql&gt; commit;</p>
+<p>#设置隔离级别</p>
+<p>set tx_isolation=’SERIALIZABLE’;</p>
+<p>Query OK, 0 rows affected (0.00 sec)</p>
+<p>mysql&gt; insert into t3 values(1,1);</p>
+<p>#阻塞，直到会话1提交</p>
+<p>Query OK, 1 row affected (48.90 sec)</p>
+<p>设置为串行化后，会话2的插入操作被阻塞。由于在串行化下，查询操作不在使用MVCC来保证一致读，而是使用S锁来阻塞其他写操作。因此做到读写可串行化，然而换来就是并发性能的大大降低。</p>
+<p>MySQL使用可重复读来作为默认隔离级别的主要原因是语句级的Binlog。RR能提供SQL语句的写可串行化，保证了绝大部分情况（<a href="http://dev.mysql.com/doc/refman/5.1/en/binary-log-mixed.html" target="_blank" rel="noopener">不安全语句</a>除外）的DB/DR一致。</p>
+<p>另外，通过这个测试发现MySQL 5.0与5.1在RC下表现是不一样的，可能存在兼容性问题。</p>
+<p><a href="http://dev.mysql.com/doc/refman/5.1/en/binary-log-mixed.html" target="_blank" rel="noopener">http://dev.mysql.com/doc/refman/5.1/en/binary-log-mixed.html</a></p>
+<p><a href="http://dev.mysql.com/doc/refman/5.1/en/set-transaction.html" target="_blank" rel="noopener">http://dev.mysql.com/doc/refman/5.1/en/set-transaction.html</a></p>
+<p><a href="http://dev.mysql.com/doc/refman/5.0/en/set-transaction.html" target="_blank" rel="noopener">http://dev.mysql.com/doc/refman/5.0/en/set-transaction.html</a></p>
+<p><a href="http://dev.mysql.com/doc/refman/5.5/en/innodb-parameters.html#sysvar_innodb_locks_unsafe_for_binlog" target="_blank" rel="noopener">http://dev.mysql.com/doc/refman/5.5/en/innodb-parameters.html#sysvar_innodb_locks_unsafe_for_binlog</a></p>
+<p><a href="http://blog.bitfly.cn/post/mysql-innodb-phantom-read/" target="_blank" rel="noopener">http://blog.bitfly.cn/post/mysql-innodb-phantom-read/</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/25/yuque/常用的sql语句/" rel="next" title="常用的sql语句">
+                <i class="fa fa-chevron-left"></i> 常用的sql语句
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/15/yuque/实例分析MySQL下的四种事务隔离级别 - 后端 - 掘金/" rel="prev" title="实例分析MySQL下的四种事务隔离级别 - 后端 - 掘金">
+                实例分析MySQL下的四种事务隔离级别 - 后端 - 掘金 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">临安的风</p>
+              <p class="site-description motion-element" itemprop="description">网络资源搬运工 Java Spring 面试 数据库 算法 zk dubbo 分布式 redis React Flutter anything</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">20</span>
+                  <span class="site-state-item-name">posts</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#幻象读"><span class="nav-number">1.</span> <span class="nav-text">幻象读</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">都来自于互联网</span>
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a></div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Gemini</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
